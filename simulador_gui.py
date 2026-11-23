@@ -38,33 +38,60 @@ except ImportError as e:
 
 PASTA = os.path.dirname(os.path.abspath(__file__))
 
-# Sessões que já vêm na pasta artefatos/, com os parâmetros usados no LEIA-ME de lá.
+# Sessões que já vêm na pasta artefatos/dados/, agrupadas por dia (um botão por dia):
+# (dia, variante, arquivo, sessão ou None, ajuste do balanço, descrição).
+# μ sai das saídas por minuto nos minutos com fila (ac.estimar_mu), não de um valor fixo.
+F17 = 'artefatos/dados/coleta_almoco_2026-11-17_fila42.csv'
+F16 = 'artefatos/dados/coletas_2026-11-16_por_coleta.csv'
 EXEMPLOS = [
-    ('17/11 · almoço inteiro', 'artefatos/analise_almoco_inteiro/c17_full_desist.csv', 4.94, 80,
-     'Resultado principal do relatório: 11:31–13:15, fila inicial 42 e 48 desistências não vistas '
-     'acrescentadas entre 12:31 e 13:15. μ = 4,94 /min e K = 80, como no LEIA-ME.'),
-    ('17/11 · primeira hora', 'artefatos/analise_primeira_hora/c17_1h_semcron.csv', 6.18, 80,
-     'Só dados observados, 11:31–12:31, fila inicial 42. μ = 6,18 /min e K = 80, como no LEIA-ME.'),
+    ('16/11', 'coleta 1 · 11:52–12:06', F16, '2026-11-16-coleta1', 'nenhum',
+     'Começou sem fila; 14 min. O balanço fecha. Tempos cronometrados descartados (relógios de B e C '
+     'dessincronizados); μ pelas contagens por minuto.'),
+    ('16/11', 'coleta 2 · 12:25–12:43', F16, '2026-11-16-coleta2', 'nenhum',
+     'Começou com 28 na fila; 18 min, com pico. O balanço fecha. Tempos cronometrados descartados (relógios de B e C '
+     'dessincronizados); μ pelas contagens por minuto.'),
+    ('16/11', 'coleta 3 · 12:51–13:02', F16, '2026-11-16-coleta3', 'nenhum',
+     'Começou sem fila; 11 min, quase sem fila. O balanço fecha. Tempos cronometrados descartados; μ pelas contagens '
+     'por minuto.'),
+    ('17/11', 'saídas não registradas (principal)', F17, None, 'saidas',
+     '11:30–13:15, fila inicial 42. Os 48 alunos que sobram no balanço são saídas que o observador B não registrou, '
+     'espalhadas nos minutos com fila depois das 12:16. É a hipótese da análise principal.'),
+    ('17/11', 'desistências não vistas', F17, None, 'desistencia',
+     'Mesmo almoço; os 48 que sobram viram desistências não vistas, proporcionais a quem espera, depois das 12:16. '
+     'μ fica menor e cai na 2ª metade.'),
+    ('17/11', 'fila inicial menor', F17, None, 'n0',
+     'Mesmo almoço; supõe que a fila inicial era menor que 42. Não fecha o balanço: as saídas dos primeiros minutos '
+     'mostram que havia fila.'),
 ]
+PERGUNTA = ('Abrir a 2ª catraca quando a fila chega a N alunos (e fechar quando cai à metade) poupa mais minutos '
+            'de espera por minuto de catraca aberta do que abri-la no horário de pico?')
+
+# rótulo da caixa de variantes de cada botão
+VARIANTE = {'16/11': 'Coleta', '17/11': 'Hipótese para os 48 alunos que sobram no balanço', 'Arquivo': 'Sessão'}
+PADRAO = ('17/11', 'saídas não registradas (principal)')
 
 # Nome do cenário no analise_catraca.py -> chave usada para cor e seleção
 CHAVES = {'1 catraca': 'base', '1 cat. sem desist.': 'semdes', '2ª só no pico': 'pico2',
-          '2 a hora toda': 'toda2', 'Personalizado': 'pers'}
+          '2 a hora toda': 'toda2', 'Personalizado': 'pers', 'atend. mais rápido': 'rapido', 'aulas escalonadas': 'escal',
+          '2ª pela fila': 'fila'}
 NOMES_LONGOS = {'base': '1 catraca', 'semdes': '1 catraca sem desistência', 'pico2': '2ª catraca só no pico',
-                'toda2': '2 catracas a hora toda', 'pers': 'Personalizado'}
+                'toda2': '2 catracas a hora toda', 'pers': 'Personalizado', 'rapido': 'Atendimento mais rápido',
+                'escal': 'Aulas escalonadas', 'fila': '2ª catraca pela fila'}
 
 TEMAS = {
     'claro': dict(
         bg='#eef1f4', surface='#ffffff', surface2='#f5f7f9', ink='#14212b', muted='#5c6b77', line='#dbe2e8',
         accent='#2a78d6', accent_hover='#256abf', accent_ink='#ffffff', pico='#f9e4e1',
         espera='#7b8a96', cat='#b8500a', ok='#2b7a4b', alert='#c0392b', barras='#0a6a8a',
-        series={'base': '#2a78d6', 'semdes': '#8a949c', 'pico2': '#1baf7a', 'toda2': '#eb6834', 'pers': '#6250d6'},
+        series={'base': '#2a78d6', 'semdes': '#8a949c', 'pico2': '#1baf7a', 'toda2': '#eb6834', 'pers': '#6250d6',
+                'rapido': '#a87700', 'escal': '#b0459f', 'fila': '#0f8f9c'},
     ),
     'escuro': dict(
         bg='#0f161c', surface='#17212a', surface2='#1e2a34', ink='#e8eef2', muted='#93a3af', line='#2a3945',
         accent='#3987e5', accent_hover='#5598e7', accent_ink='#ffffff', pico='#2f2228',
         espera='#8b9aa6', cat='#f0985a', ok='#5ccf8a', alert='#ff7a6b', barras='#4cb8d9',
-        series={'base': '#3987e5', 'semdes': '#8b949c', 'pico2': '#199e70', 'toda2': '#d95926', 'pers': '#9085e9'},
+        series={'base': '#3987e5', 'semdes': '#8b949c', 'pico2': '#199e70', 'toda2': '#d95926', 'pers': '#9085e9',
+                'rapido': '#e0b040', 'escal': '#d77cc9', 'fila': '#3fc1cc'},
     ),
 }
 
@@ -83,7 +110,8 @@ class Cancelado(Exception):
 def calcular(c, progresso=None):
     """Roda a simulação inteira com a configuração `c` montada pela janela.
     Mesma sequência do analisar() do analise_catraca.py: verificação, passo seguro, cenários, validação."""
-    pico, mu = c['pico'], c['mu']
+    pico, mu, grupo = c['pico'], c['mu'], c.get('grupo')
+    Ek = grupo['Ek'] if grupo else 1.0
     out = {'cfg': c, 'avisos': []}
     lams = ac.lams_por_minuto(pico, c['lam_cal'], c['lam_pic'], c['lam_med'])
     out['lams'] = lams
@@ -91,56 +119,112 @@ def calcular(c, progresso=None):
 
     if c['lam_cal'] is not None and c['lam_cal'] > 0 and ac.formulas(c['lam_cal'], mu)['estavel']:
         pv = ac.passo_seguro([c['lam_cal']], mu, 1, 0.0, c['K'], passo)
-        out['verif'] = ac.verificar(c['lam_cal'], mu, c['K'], c['seed'], pv)
+        out['verif'] = [('M/M/1, uma a uma',) + ac.verificar(c['lam_cal'], mu, c['K'], c['seed'], pv)]
+        if grupo:
+            pg = ac.passo_seguro([c['lam_cal']], mu, 1, 0.0, c['K'], passo, Ek)
+            out['verif'].append(('M^X/M/1, em grupo',) + ac.verificar(c['lam_cal'], mu, c['K'], c['seed'], pg, grupo=grupo))
 
     cen = [x for x in ac.cenarios_padrao(pico, c['theta']) if CHAVES[x[0]] == 'base' or CHAVES[x[0]] in c['sel']]
     if 'pers' in c['sel']:
         cc, cp, desist = c['pers']
         cen.append(('Personalizado', [cp if p else cc for p in pico], c['theta'] if desist else 0.0))
-    cmax = max(max(cs) for _, cs, _ in cen)
-    novo = ac.passo_seguro(lams, mu, max(2, cmax), c['theta'], c['K'], passo)
+    cen += [x for x in ac.cenarios_slide61(pico, c['theta'], lams, c['lam_cal'], mu, c.get('troca')) if CHAVES[x[0]] in c['sel']]
+    T = len(pico)
+    out['busca'] = None
+    if 'fila' in c['sel']:
+        pb = ac.passo_cenarios(cen + [ac.cenario_fila(T, c['theta'], 1, 0)], lams, mu, c['theta'], c['K'], passo, Ek)
+        if c.get('gatilho'):
+            N, M = c['gatilho'], c['gatilho'] // 2
+        else:  # automático: o N mais eficiente entre os que esperam no máximo o mesmo que a 2ª no horário de pico
+            out['busca'] = ac.buscar_gatilho(lams, mu, pico, c['n0'], c['K'], c['seed'], pb, min(c['reps'], 100),
+                                             c['lam_med'], c['theta'], grupo)
+            mel = out['busca']['melhor']
+            N, M = (mel['N'], mel['M']) if mel else (None, None)
+        if N:
+            cen.append(ac.cenario_fila(T, c['theta'], N, M))
+    novo = ac.passo_cenarios(cen, lams, mu, c['theta'], c['K'], passo, Ek)
     if novo != passo:
         out['avisos'].append(f'Passo reduzido de {br(passo, 1)} s para {br(novo, 1)} s: com μ = {br(mu)} /min '
                              'o passo maior daria chances somando mais de 1.')
         passo = novo
     out['passo'] = passo
 
-    res = ac.simular_cenarios(cen, lams, mu, c['n0'], c['K'], c['seed'], passo, c['reps'], c['lam_med'], progresso)
+    res = ac.simular_cenarios(cen, lams, mu, c['n0'], c['K'], c['seed'], passo, c['reps'], c['lam_med'], progresso, grupo)
     for nome, r in res.items():
+        if r['toca_K'] > .05:
+            out['avisos'].append(f'Em {pct(r["toca_K"])} das réplicas de "{NOMES_LONGOS[CHAVES[nome]]}" a fila bateu em K = {c["K"]}: '
+                                 'aumente K, a fila está sendo cortada pelo limite.')
         r['chave'] = CHAVES[nome]
         cols = list(zip(*r['hs']))
         r['media'] = [sum(col) / len(col) for col in cols]
         if nome == '1 catraca':
             r['p05'] = [ac.percentil(col, .05) for col in cols]
             r['p95'] = [ac.percentil(col, .95) for col in cols]
+    ac.eficiencia(res, c['lam_med'] * T)
     out['res'] = res
-    if c['d'] and c['d']['fila']:
-        out['valid'] = ac.validar(c['d']['fila'], res['1 catraca']['hs'], passo)
+    # achado: quanto chegar em grupo aumenta a espera (1 catraca, com e sem grupos)
+    g_ref = ac.estimar_grupos(c['d']['chegadas_seg'], 1.5) if c['d'] else None
+    if g_ref:
+        cq = [('1 catraca', [1] * T, c['theta'])]
+        outro = None if grupo else g_ref
+        pq = ac.passo_cenarios(cq, lams, mu, c['theta'], c['K'], passo, outro['Ek'] if outro else 1.0)
+        w_outro = ac.simular_cenarios(cq, lams, mu, c['n0'], c['K'], c['seed'], pq, min(c['reps'], 200), c['lam_med'],
+                                      grupo=outro)['1 catraca']['W']
+        w_aqui = res['1 catraca']['W']
+        out['q6'] = {'Ek': g_ref['Ek'], 'fator': (1 + g_ref['D']) / 2,
+                     'w_um': w_aqui if not grupo else w_outro, 'w_gr': w_outro if not grupo else w_aqui}
+    d = c['d']
+    if d and d['fila']:
+        out['valid'] = ac.validar(d['fila'], res['1 catraca']['hs'], passo)
+        if c.get('med'):
+            out['valid'] += ac.validar_dispersao(d, c['med'], lams, passo, grupo, min(c['reps'], 300), c['seed'])
+        curva = ac.comparar_curva(d['fila'], res['1 catraca']['hs'], passo)
+        if curva:
+            out['valid'].append(curva['linha'])
+            out['curva'] = curva
+        hs_t, pt = ac.simular_base_trace(d, mu, c['n0'], c['K'], c['seed'], passo, min(c['reps'], 300), c['theta'])
+        out['valid_trace'] = ac.validar(d['fila'], hs_t, pt)
+    if c.get('sens') and c.get('med'):
+        md = dict(c['med'], pico=pico, lam_cal=c['lam_cal'], lam_pic=c['lam_pic'], theta=c['theta'], n0=c['n0'])
+        out['sens'] = ac.sensibilidade(md, c['sens'], c['K'], c['seed'], c['passo'], min(c['reps'], 60), grupo, c['lam_med'])
     return out
 
 
-def rastrear(hist, lams, mu, cs, n0, K, seed, passo, theta):
-    """Refaz os sorteios de uma réplica (mesmo random.Random(seed) do simular) para saber o que
-    aconteceu em cada passo: 0 nada, 1 chegada, 2 passou na catraca, 3 desistiu, 4 chegou com a fila cheia."""
+def rastrear(hist, lams, mu, cs, n0, K, seed, passo, theta, grupo=None, politica=None):
+    """Refaz os sorteios de uma réplica (mesmo random.Random(seed) do simular) para saber o que aconteceu em
+    cada passo: 0 nada, 1 chegada (de um grupo), 2 passou na catraca, 3 desistiu, 4 chegou com a fila cheia.
+    O tamanho do grupo vem de outro gerador; a animação lê quantos entraram pela diferença do histórico.
+    Devolve (eventos, catracas abertas em cada passo): com a política pela fila, a 2ª catraca abre e fecha pela fila."""
     rng, n, T = random.Random(seed), n0, len(lams)
     s = mu * passo / 60
+    Ek = grupo['Ek'] if grupo else 1.0
     ev = bytearray(len(hist))
+    abertas = bytearray(len(hist))
+    aberta = False
     for i, novo in enumerate(hist):
         m = min(int(i * passo / 60), T - 1)
-        a = lams[m] * passo / 60
-        d = max(n - cs[m], 0) * theta * passo / 60
+        a = lams[m] / Ek * passo / 60
+        c = cs[m]
+        if politica:
+            if not aberta and n >= politica[0]:
+                aberta = True
+            elif aberta and n <= politica[1]:
+                aberta = False
+            c += aberta
+        abertas[i] = c
+        d = max(n - c, 0) * theta * passo / 60
         u = rng.random()
         if u < a:
             e = 1 if n < K else 4
-        elif u < a + min(n, cs[m]) * s:
+        elif u < a + min(n, c) * s:
             e = 2
-        elif u < a + min(n, cs[m]) * s + d:
+        elif u < a + min(n, c) * s + d:
             e = 3
         else:
             e = 0
         n = novo
         ev[i] = e
-    return ev
+    return ev, abertas
 
 
 class Rodada(QThread):
@@ -308,21 +392,28 @@ class Palco(QWidget):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
     # ---- dados
-    def carregar(self, hist, ev, cs, n0, passo, K):
+    def carregar(self, hist, ev, cs, n0, passo, K, abertas=None):
         self.hist, self.ev, self.cs, self.n0, self.passo, self.K = hist, ev, cs, n0, passo, K
+        self.abertas = abertas  # catracas abertas em cada passo (política pela fila); None = pelo minuto
         self.N, self.T = len(hist), len(cs)
-        self.cmax = max(cs)
+        self.cmax = max(max(cs), max(abertas) if abertas else 0)
         self.acum = {e: [] for e in (1, 2, 3, 4)}
         cont = {e: 0 for e in (1, 2, 3, 4)}
-        for e in ev:
-            if e:
+        ant = n0
+        for i, e in enumerate(ev):
+            if e == 1:
+                cont[1] += max(1, hist[i] - ant)  # um grupo pode trazer vários alunos
+            elif e:
                 cont[e] += 1
+            ant = hist[i]
             for x in (1, 2, 3, 4):
                 self.acum[x].append(cont[x])
         self._geometria()
         self.ir_para(-1)
 
     def catracas_no_passo(self, k):
+        if self.abertas:
+            return self.abertas[min(max(k, 0), len(self.abertas) - 1)]
         return self.cs[min(int(max(k, 0) * self.passo / 60), self.T - 1)]
 
     def contagem(self, tipo):
@@ -401,8 +492,10 @@ class Palco(QWidget):
         e = self.ev[i]
         c = self.catracas_no_passo(i)
         if e == 1:
-            x, y = self.pos_fila(len(self.fila))
-            self.fila.append(Aluno(x - 20, y, a=0.0))
+            antes = self.n0 if i == 0 else self.hist[i - 1]
+            for j in range(max(1, self.hist[i] - antes)):  # chegada em grupo
+                x, y = self.pos_fila(len(self.fila))
+                self.fila.append(Aluno(x - 20 - 10 * j, y, a=0.0))
         elif e == 4:
             self.aviso_k = 1.0
         elif e == 2:
@@ -700,6 +793,14 @@ class Cartao(QFrame):
             lay.addWidget(rotulo(txt, 'bom' if dif < 0 else 'ruim', quebra=True))
         else:
             lay.addWidget(rotulo('situação atual', 'dica'))
+        if r.get('custo', 0) > 0.5:
+            txt = f'custo: {br(r["custo"], 0)} min de catraca extra'
+            if r.get('efic') is not None:
+                txt += f' · poupa {br(r["efic"], 0)} min de espera por min'
+            lay.addWidget(rotulo(txt, 'dica', quebra=True))
+        if r.get('nota'):
+            pre = '' if r.get('politica') else 'sem catraca extra: '
+            lay.addWidget(rotulo(pre + r['nota'], 'dica', quebra=True))
         lay.addSpacing(8)
         g = QGridLayout()
         g.setHorizontalSpacing(12)
@@ -746,7 +847,7 @@ class Janela(QMainWindow):
         if arquivos_iniciais:
             self.abrir_csvs(arquivos_iniciais)
         elif self.fontes:
-            self.fonte.setCurrentIndex(0)
+            self._selecionar(self._indice_padrao())
             self.trocar_fonte()
 
     # ------------------------------------------------------------ montagem
@@ -789,11 +890,20 @@ class Janela(QMainWindow):
         # dados
         f, l = card()
         l.addWidget(rotulo('Dados', nome='h2'))
-        self.fonte = QComboBox()
-        self.fonte.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
-        self.fonte.setMinimumContentsLength(12)
-        self.fonte.currentIndexChanged.connect(lambda _: self.trocar_fonte())
-        l.addWidget(self.fonte)
+        self.linha_dias = QHBoxLayout()
+        self.linha_dias.setSpacing(6)
+        l.addLayout(self.linha_dias)
+        self.grupo_dias = QButtonGroup(self)
+        self.grupo_dias.setExclusive(True)
+        self.botoes_dia = {}
+        self.dia = None
+        self.variante_lb = rotulo('', 'campo', quebra=True)
+        l.addWidget(self.variante_lb)
+        self.variante = QComboBox()
+        self.variante.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.variante.setMinimumContentsLength(12)
+        self.variante.currentIndexChanged.connect(lambda _: self.trocar_fonte())
+        l.addWidget(self.variante)
         self.fonte_desc = rotulo('', 'dica', quebra=True)
         l.addWidget(self.fonte_desc)
         b = QPushButton('Abrir CSVs da coleta…')
@@ -806,7 +916,7 @@ class Janela(QMainWindow):
 
         # parâmetros
         f, l = card()
-        l.addWidget(rotulo('Chegadas e atendimento', nome='h2'))
+        l.addWidget(rotulo('Chegadas e Atendimento', nome='h2'))
         self.caixa_manual = QWidget()
         gm = QGridLayout(self.caixa_manual)
         gm.setContentsMargins(0, 0, 0, 0)
@@ -850,6 +960,16 @@ class Janela(QMainWindow):
         l.addLayout(g)
         for w in (self.m_T, self.m_pi, self.m_pf):
             w.valueChanged.connect(lambda _v: self._pendente())
+        linha_regra = QHBoxLayout()
+        linha_regra.addWidget(rotulo('Regra do pico', 'campo'))
+        self.regra = QComboBox()
+        self.regra.addItem('1,5 × a média (slide 59)', 'slide59')
+        self.regra.addItem('duas médias (versão anterior)', 'duas-medias')
+        self.regra.setToolTip('Como o limiar automático separa calma e pico (sempre pelas chegadas por minuto, '
+                              'na média móvel de 5 min).')
+        self.regra.currentIndexChanged.connect(lambda _i: self._limiar_mudou())
+        linha_regra.addWidget(self.regra, 1)
+        l.addLayout(linha_regra)
         self.btn_medidos = QPushButton('↺ Voltar aos valores medidos')
         self.btn_medidos.setProperty('papel', 'fino')
         self.btn_medidos.clicked.connect(self.restaurar_medidos)
@@ -860,7 +980,7 @@ class Janela(QMainWindow):
         f, l = card()
         l.addWidget(rotulo('Cenários', nome='h2'))
         self.checks = {}
-        for k in ('base', 'semdes', 'pico2', 'toda2', 'pers'):
+        for k in ('base', 'semdes', 'pico2', 'fila', 'toda2', 'rapido', 'escal', 'pers'):
             cb = QCheckBox(NOMES_LONGOS[k])
             cb.setChecked(k != 'pers')
             if k == 'base':
@@ -869,6 +989,19 @@ class Janela(QMainWindow):
             cb.toggled.connect(lambda _v: self._pendente())
             self.checks[k] = cb
             l.addWidget(cb)
+        linha_g = QHBoxLayout()
+        linha_g.setContentsMargins(24, 0, 0, 0)
+        linha_g.addWidget(rotulo('Pela fila: abre com N alunos (fecha com N/2)', 'campo', quebra=True), 1)
+        self.p_gatilho = self._spin(QSpinBox, 0, 200, 0)
+        self.p_gatilho.setSpecialValueText('automático')
+        self.p_gatilho.setToolTip('Automático: testa N = 3 a 30 e usa o que poupa mais espera por minuto de catraca aberta, '
+                                  'entre os que esperam no máximo o mesmo que a 2ª catraca no horário de pico.')
+        self.p_gatilho.valueChanged.connect(lambda _v: self._pendente())
+        linha_g.addWidget(self.p_gatilho)
+        self.caixa_gatilho = QWidget()
+        self.caixa_gatilho.setLayout(linha_g)
+        l.addWidget(self.caixa_gatilho)
+        self.checks['fila'].toggled.connect(self.caixa_gatilho.setVisible)
         self.caixa_pers = QWidget()
         gp = QGridLayout(self.caixa_pers)
         gp.setContentsMargins(24, 2, 0, 0)
@@ -896,7 +1029,7 @@ class Janela(QMainWindow):
         g = QGridLayout()
         g.setHorizontalSpacing(10)
         g.setVerticalSpacing(3)
-        self.p_K = self._spin(QSpinBox, 5, 2000, 80)
+        self.p_K = self._spin(QSpinBox, 5, 2000, 200)
         self.p_reps = self._spin(QSpinBox, 2, 5000, 500)
         self.p_seed = self._spin(QSpinBox, 0, 2_000_000_000, 42)
         self.p_passo = self._spin(QDoubleSpinBox, 0.5, 60, 5, 1)
@@ -907,6 +1040,12 @@ class Janela(QMainWindow):
             g.addWidget(w, r * 2 + 1, c)
             w.valueChanged.connect(lambda _v: self._pendente())
         l.addLayout(g)
+        self.p_grupo = QCheckBox('Refinamento: chegadas em grupo')
+        self.p_grupo.setChecked(False)
+        self.p_grupo.setToolTip('Desligado = M/M/1, chegadas uma a uma (modelo dos slides). Ligado: chegadas a até 1,5 s uma da '
+                                'outra formam um grupo, o que reproduz as rajadas (D > 1) que o M/M/1 não imita. Sem dados, fica desligado.')
+        self.p_grupo.toggled.connect(lambda _v: self._pendente())
+        l.addWidget(self.p_grupo)
         l.addSpacing(4)
         self.btn_sim = QPushButton('Simular')
         self.btn_sim.setProperty('papel', 'primario')
@@ -927,7 +1066,7 @@ class Janela(QMainWindow):
         corpo.addWidget(self.abas, 1)
         self.abas.addTab(self._aba_geral(), 'Visão geral')
         self.abas.addTab(self._aba_graficos(), 'Gráficos')
-        self.abas.addTab(self._aba_tabelas(), 'Modelo e validação')
+        self.abas.addTab(self._aba_tabelas(), 'Modelo e Validação')
 
     def _rolagem(self):
         sa = QScrollArea()
@@ -943,10 +1082,30 @@ class Janela(QMainWindow):
 
     def _aba_geral(self):
         sa, lay = self._rolagem()
+        linha_pr = QHBoxLayout()
+        linha_pr.setSpacing(12)
+        f, l = card()
+        l.addWidget(rotulo('PERGUNTA DA EQUIPE', 'rotulo'))
+        self.pergunta_lb = rotulo(PERGUNTA, 'conclusao', quebra=True)
+        l.addWidget(self.pergunta_lb)
+        l.addStretch(1)
+        linha_pr.addWidget(f, 1)
+        f, l = card()
+        l.addWidget(rotulo('RESPOSTA', 'rotulo'))
+        self.resposta_lb = rotulo('Simulando…', 'grande', quebra=True)
+        l.addWidget(self.resposta_lb)
+        self.resposta_det = rotulo('', 'dica', quebra=True)
+        l.addWidget(self.resposta_det)
+        l.addStretch(1)
+        linha_pr.addWidget(f, 1)
+        lay.addLayout(linha_pr)
+
         f, l = card()
         l.addWidget(rotulo('CONCLUSÃO', 'rotulo'))
         self.conclusao = rotulo('Simulando…', 'conclusao', quebra=True)
         l.addWidget(self.conclusao)
+        self.achado_lb = rotulo('', 'dica', quebra=True)
+        l.addWidget(self.achado_lb)
         self.selo_valid = rotulo('', 'dica', quebra=True)
         l.addWidget(self.selo_valid)
         lay.addWidget(f)
@@ -1053,12 +1212,22 @@ class Janela(QMainWindow):
     def _aba_tabelas(self):
         sa, lay = self._rolagem()
         self.tabs = {}
+        self.dica_valid = ''
         for k, tit, dica in (
-            ('cen', 'Cenários', '± é o IC de 95% entre réplicas. Uma hora simulada é uma amostra, não uma medida.'),
-            ('valid', 'Validação (slide 22)', 'Fila reconstruída × simulada nos mesmos instantes. Se algum item ficar fora da faixa, '
-             'revejam primeiro as medições: contagens, separação calma/pico e os atendimentos cronometrados.'),
+            ('cen', 'Cenários', '± é o IC de 95% entre réplicas. Uma hora simulada é uma amostra, não uma medida. '
+             'Custo = minutos de catraca extra aberta; eficiência = minutos de espera poupados, somando os alunos, por minuto de catraca extra.'),
+            ('busca', 'Pergunta da equipe: gatilho da 2ª catraca pela fila', 'A 2ª catraca abre quando a fila chega a N e fecha '
+             'quando cai a N/2. O melhor N é o mais eficiente entre os que esperam no máximo o mesmo que a 2ª catraca no '
+             'horário de pico. Com o gatilho em "automático"; menos réplicas por linha.'),
+            ('valid', 'Validação', 'Fila reconstruída × simulada nos mesmos instantes. Se algum item ficar fora da faixa, '
+             'revejam primeiro as medições: contagens, separação calma/pico e os atendimentos cronometrados. '
+             'No M/M/1 (chegadas uma a uma) o D fica perto de 1 e falha contra os dados; ligue "Refinamento: chegadas em grupo" '
+             'para comparar.'),
+            ('sens', 'Sensibilidade a μ', 'μ é a medida mais incerta do estudo: o mesmo cálculo com o IC de μ e com o '
+             'tempo cronometrado (otimista: mede só a passagem, sem a troca entre alunos). Menos réplicas por linha.'),
             ('mm1', 'Modelo M/M/1 por trecho', ''),
-            ('verif', 'Verificação (slide 19)', 'Simulador com λ de calma e 1 catraca por 200 h simuladas contra as fórmulas. '
+            ('verif', 'Verificação', 'Simulador com λ de calma e 1 catraca por 200 h simuladas contra as fórmulas: '
+             'M/M/1 com chegadas uma a uma e M^X/M/1 com os grupos, L = ρ(1 + D)/(2(1 − ρ)), D = E[k²]/E[k]. '
              'Se os dois lados ficam próximos, o código faz o que o modelo diz.'),
         ):
             f, l = card()
@@ -1074,6 +1243,8 @@ class Janela(QMainWindow):
             tb.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
             l.addWidget(tb)
             info = rotulo(dica, 'dica', quebra=True)
+            if k == 'valid':
+                self.dica_valid = dica
             l.addWidget(info)
             self.tabs[k] = (tb, info, f)
             lay.addWidget(f)
@@ -1106,29 +1277,102 @@ class Janela(QMainWindow):
         self.linha.update()
 
     # ------------------------------------------------------------ fontes de dados
+    def _fonte_de(self, rot, desc, dados):
+        """Monta uma fonte a partir de [(d, s)]: μ pelas saídas com fila; o cronometrado fica como referência."""
+        vals = [v for d, _ in dados for v in ac.vals_mu(d)]
+        est = ac.resumo_mu(vals)
+        atend = [a for d, _ in dados for a in d['atend'] if a > 0]
+        mu_cron = 60 / (sum(atend) / len(atend)) if atend else None
+        if est:
+            mu = est['mu']
+            mu_txt = f'saídas/min com fila, {est["n"]} min, ± {br(est["ic"])}'
+        elif mu_cron:
+            mu, mu_txt = mu_cron, 'cronometrado, otimista'
+        else:
+            mu, mu_txt = None, None
+        if mu_cron and est:
+            mu_txt += f'; cronometrado (só a passagem) {br(mu_cron)}'
+        return {'rotulo': rot, 'desc': desc, 'mu': mu, 'mu_txt': mu_txt, 'mu_est': est, 'mu_cron': mu_cron, 'K': 200}
+
     def _carregar_exemplos(self):
-        for rot, rel, mu, K, desc in EXEMPLOS:
+        for dia, var, rel, sessao, ajuste, desc in EXEMPLOS:
             caminho = os.path.join(PASTA, rel)
             if not os.path.exists(caminho):
                 continue
             sess = ac.ler([caminho])
+            # todas as sessões do arquivo (o dia inteiro), com o mesmo ajuste: μ sai do dia, não só da sessão
+            dia_todo = {}
             for nome, s in sorted(sess.items()):
-                d = ac.preparar(nome, s)
+                s2, txt = ac.ajustar(s, ajuste)
+                d = ac.preparar(nome, s2)
                 if d:
-                    self.fontes.append({'rotulo': rot, 'desc': desc, 'd': d, 'mu': mu, 'K': K,
-                                        't0': min(s['inicio']) if s['inicio'] else None, 'mu_txt': 'do LEIA-ME'})
-        self.fontes.append({'rotulo': 'Modelo manual (sem dados)', 'd': None, 'mu': 4.94, 'K': 80, 't0': None,
+                    dia_todo[nome] = (d, s2, txt)
+            for nome, (d, s2, txt) in dia_todo.items():
+                if sessao and nome != sessao:
+                    continue
+                f = self._fonte_de(f'{dia} · {var}', desc + (f' Ajuste: {txt.rstrip(".")}.' if txt and ajuste != 'nenhum' else ''),
+                                   [(x[0], x[1]) for x in dia_todo.values()])
+                if len(dia_todo) > 1 and f['mu_txt']:
+                    f['mu_txt'] += f'; juntando as {len(dia_todo)} coletas do dia'
+                f.update({'d': d, 't0': d['t0'], 'grupo': dia, 'variante': var})
+                self.fontes.append(f)
+        self.fontes.append({'rotulo': 'Sem dados (modelo manual)', 'grupo': 'Sem dados', 'variante': '',
+                            'd': None, 'mu': 6.2, 'K': 200, 't0': None, 'mu_est': None, 'mu_cron': None,
                             'desc': 'Escolha a duração, o trecho de pico e as taxas. Sem dados não há validação.'})
         self._encher_combo()
 
     def _encher_combo(self, atual=None):
-        self._prog = True
-        self.fonte.clear()
+        """Refaz um botão por dia (na ordem em que aparecem em self.fontes) e seleciona a fonte `atual` (índice)."""
+        for b in self.botoes_dia.values():
+            self.grupo_dias.removeButton(b)
+            b.setParent(None)
+            b.deleteLater()
+        self.botoes_dia = {}
         for f in self.fontes:
-            self.fonte.addItem(f['rotulo'])
-        self._prog = False
+            g = f['grupo']
+            if g in self.botoes_dia:
+                continue
+            b = QPushButton(g)
+            b.setProperty('papel', 'seg')
+            b.setCheckable(True)
+            b.clicked.connect(lambda _c=False, g=g: self._escolher_dia(g))
+            self.grupo_dias.addButton(b)
+            self.linha_dias.addWidget(b)
+            self.botoes_dia[g] = b
         if atual is not None:
-            self.fonte.setCurrentIndex(atual)
+            self._selecionar(atual)
+
+    def _do_dia(self, dia):
+        return [f for f in self.fontes if f['grupo'] == dia]
+
+    def _selecionar(self, i):
+        """Marca o botão do dia da fonte i e põe a variante dela na caixa (sem simular)."""
+        f = self.fontes[i]
+        self.dia = f['grupo']
+        self.botoes_dia[self.dia].setChecked(True)
+        do_dia = self._do_dia(self.dia)
+        self._prog = True
+        self.variante.clear()
+        for x in do_dia:
+            self.variante.addItem(x['variante'])
+        self.variante.setCurrentIndex(do_dia.index(f))
+        self._prog = False
+        varias = len(do_dia) > 1
+        self.variante.setVisible(varias)
+        self.variante_lb.setVisible(varias)
+        self.variante_lb.setText(VARIANTE.get(self.dia, 'Opção'))
+
+    def _escolher_dia(self, dia):
+        if dia == self.dia:
+            return
+        self._selecionar(self.fontes.index(self._do_dia(dia)[0]))
+        self.trocar_fonte()
+
+    def _indice_padrao(self):
+        for i, f in enumerate(self.fontes):
+            if (f['grupo'], f['variante']) == PADRAO:
+                return i
+        return 0
 
     def abrir_csvs(self, caminhos=None):
         if caminhos is None:
@@ -1148,30 +1392,26 @@ class Janela(QMainWindow):
             self.msg_arquivos.setText('Nenhuma sessão encontrada. Os arquivos precisam ser os CSVs exportados pela página de coleta.')
             self.msg_arquivos.show()
             return
-        atend = [a for d, _ in dados for a in d['atend'] if a > 0]
-        if atend:
-            m = sum(atend) / len(atend)
-            mu, mu_txt = 60 / m, f'{len(atend)} atendimentos cronometrados'
-            if len(atend) > 1:
-                cv = statistics.stdev(atend) / m
-                mu_txt += f', CV = {br(cv)}'
-        else:
-            mu, mu_txt = None, None
+        base = self._fonte_de('', '', dados)  # μ conjunto de todas as sessões abertas
         primeiro = len(self.fontes) - 1  # antes do "Modelo manual"
         for d, s in dados:
             desc = f'{len(caminhos)} arquivo(s) · {d["T"]} min · {sum(d["arr"])} chegadas · {sum(d["des"])} desistências.'
-            if mu is None:
-                desc += ' Sem atendimentos cronometrados: confira o μ.'
-            todos = s['inicio'] + s['chegada'] + s['saida_atend']
-            self.fontes.insert(len(self.fontes) - 1, {
-                'rotulo': f'{d["nome"]} (arquivo)', 'desc': desc, 'd': d, 'mu': mu, 'K': None,
-                't0': min(s['inicio']) if s['inicio'] else (min(todos) if todos else None), 'mu_txt': mu_txt})
+            if d['reconstruida'] and d['fila_final']:
+                desc += f' A fila reconstruída termina com {d["fila_final"]}: faltou anotar algo (veja --comparar-ajustes).'
+            if d['atend_aviso']:
+                desc += ' Tempos cronometrados descartados (relógios de celulares diferentes).'
+            if base['mu'] is None:
+                desc += ' Sem minutos com fila nem cronometragem: informe μ.'
+            f = dict(base, rotulo=f'{d["nome"]} (arquivo)', desc=desc, d=d, K=None, t0=d['t0'],
+                     grupo='Arquivo', variante=d['nome'])
+            self.fontes.insert(len(self.fontes) - 1, f)
         self._encher_combo(primeiro)
         self.trocar_fonte()
 
     def fonte_atual(self):
-        i = self.fonte.currentIndex()
-        return self.fontes[i] if 0 <= i < len(self.fontes) else None
+        do_dia = self._do_dia(self.dia)
+        i = self.variante.currentIndex()
+        return do_dia[i] if 0 <= i < len(do_dia) else (do_dia[0] if do_dia else None)
 
     def trocar_fonte(self):
         if self._prog:
@@ -1218,7 +1458,7 @@ class Janela(QMainWindow):
                 self.campos[k][1].setText('')
         else:
             lim = self.campos['limiar'][0].value() or None
-            self.med = md = ac.medir(f['d'], lim)
+            self.med = md = ac.medir(f['d'], lim, regra=self.regra.currentData())
             self.medido = {'lam_cal': md['lam_cal'], 'lam_pic': md['lam_pic'], 'theta': md['theta'], 'n0': md['n0']}
             if mu_digitado:
                 self.editado.add('mu')
@@ -1230,7 +1470,7 @@ class Janela(QMainWindow):
             self.campos['lam_pic'][1].setText(f'medido: {br(md["lam_pic"])} em {len(md["pic_m"])} min' if md['lam_pic'] is not None else 'sem pico detectado')
             self.campos['theta'][1].setText(f'medido: {br(md["theta"], 3)} ({md["D"]} desistências)')
             self.campos['n0'][1].setText(f'medido: {md["n0"]}')
-            self.campos['mu'][1].setText(f'{f.get("mu_txt") or "informado"}: {br(f["mu"])}' if f['mu'] is not None else 'sem cronometragem: informe μ')
+            self.campos['mu'][1].setText(f'medido: {br(f["mu"])} ({f.get("mu_txt") or "informado"})' if f['mu'] is not None else 'sem minutos com fila: informe μ')
             limtxt = br(md['limiar']) if md['limiar'] != float('inf') else 'sem pico claro'
             self.campos['limiar'][1].setText(('automático: ' if not lim else 'usado: ') + limtxt)
         self._prog = False
@@ -1278,6 +1518,12 @@ class Janela(QMainWindow):
             c['lam_cal'] = self.valor('lam_cal') if self.med['lam_cal'] is not None else None
             c['lam_pic'] = self.valor('lam_pic') if self.med['lam_pic'] is not None else None
         c['T'] = len(c['pico'])
+        c['med'] = self.med if f['d'] is not None else None
+        tr = f['d'].get('trocas') if f['d'] is not None else None
+        c['troca'] = sum(tr) / len(tr) if tr else None
+        c['gatilho'] = self.p_gatilho.value()
+        c['grupo'] = ac.estimar_grupos(f['d']['chegadas_seg']) if (f['d'] is not None and self.p_grupo.isChecked()) else None
+        c['sens'] = ac.opcoes_sens(f.get('mu_est'), c['mu'], f.get('mu_cron')) if f['d'] is not None else []
         lams = ac.lams_por_minuto(c['pico'], c['lam_cal'], c['lam_pic'], 0)
         if f['d'] is not None and not ({'lam_cal', 'lam_pic'} & self.editado):
             c['lam_med'] = self.med['lam_med']  # o mesmo λ médio do relatório (W = L / λ)
@@ -1342,22 +1588,56 @@ class Janela(QMainWindow):
         # conclusão
         if '2ª só no pico' in res:
             c2 = res['2ª só no pico']
-            txt = (f'Uma 2ª catraca só no pico muda o tempo médio no sistema de {br(base["W"], 1)} para '
-                   f'{br(c2["W"], 1)} min, e os alunos em média de {br(base["L"], 1)} para {br(c2["L"], 1)}.')
+            quando = ac.texto_janelas(ac.janelas_pico(c['pico']), c['t0'])
+            quando = quando[0].upper() + quando[1:]
+            txt = ''
             if c['lam_pic'] is not None:
-                txt += f' No pico chegam {br(c["lam_pic"])} alunos/min, contra μ = {br(c["mu"])} de uma catraca.'
+                txt = (f'{quando} chegam {br(c["lam_pic"])} alunos/min para μ = {br(c["mu"])} de uma catraca '
+                       f'(ρ = {br(c["lam_pic"] / c["mu"])}). ')
+            txt += (f'Uma 2ª catraca só nesse intervalo muda o tempo médio no sistema de {br(base["W"], 1)} para '
+                    f'{br(c2["W"], 1)} min, e os alunos em média de {br(base["L"], 1)} para {br(c2["L"], 1)}.')
+            sens = s.get('sens') or []
+            w2 = [x['res']['2ª só no pico']['W'] for x in sens if '2ª só no pico' in x['res']]
+            if len(w2) > 1:
+                txt += (f' Com μ entre {br(sens[0]["mu"])} e {br(sens[-1]["mu"])}, W com a 2ª catraca fica entre '
+                        f'{br(min(w2), 1)} e {br(max(w2), 1)} min.')
+            txt += f' Custo: {br(c2["custo"], 0)} min de 2ª catraca aberta.'
+            alt = [r for n, r in res.items() if CHAVES[n] in ('rapido', 'escal')]
+            if alt:
+                txt += ' Sem catraca extra: ' + '; '.join(f'{NOMES_LONGOS[r["chave"]].lower()}, W = {br(r["W"], 1)} min' for r in alt) + '.'
+            rf = res.get('2ª pela fila')
+            if rf and rf['efic'] is not None and c2['efic'] is not None:
+                N, M = rf['politica']
+                resposta = 'Sim.' if rf['efic'] > c2['efic'] else 'Não.'
+                detalhe = (f'Abrindo com {N} alunos na fila e fechando com {M}, cada minuto de 2ª catraca poupa '
+                           f'<b>{br(rf["efic"], 0)} min</b> de espera, contra <b>{br(c2["efic"], 0)}</b> no horário de pico.<br>'
+                           f'2ª catraca aberta: {br(rf["custo"], 0)} min pela fila × {br(c2["custo"], 0)} min pelo horário · '
+                           f'W: {br(rf["W"], 1)} × {br(c2["W"], 1)} min (1 catraca: {br(base["W"], 1)} min).')
+            else:
+                resposta, detalhe = '—', 'Marque "2ª catraca pela fila" e "2ª catraca só no pico" nos cenários para responder.'
         elif '2 a hora toda' in res:
             c2 = res['2 a hora toda']
+            resposta, detalhe = '—', 'Sem pico detectado nesta sessão: não há horário de pico para comparar.'
             txt = (f'Sem pico detectado. Com 2 catracas a hora toda, o tempo médio no sistema vai de {br(base["W"], 1)} '
                    f'para {br(c2["W"], 1)} min.')
         else:
+            resposta, detalhe = '—', 'Marque os cenários com 2ª catraca para responder.'
             txt = f'Com 1 catraca, o tempo médio no sistema é {br(base["W"], 1)} min e há {br(base["L"], 1)} alunos em média.'
+        self.resposta_lb.setText(resposta)
+        self.resposta_det.setText(detalhe)
+        q6 = s.get('q6')
+        self.achado_lb.setText(
+            f'<b>Achado:</b> chegar em grupo ({br(q6["Ek"])} alunos por grupo) aumenta a espera: ×{br(q6["fator"], 1)} '
+            f'na calma pela fórmula; no almoço simulado, W com 1 catraca vai de {br(q6["w_um"], 1)} (um a um) para '
+            f'{br(q6["w_gr"], 1)} min (em grupo).' if q6 else '')
+        self.achado_lb.setVisible(bool(q6))
         self.conclusao.setText(txt)
         if s.get('valid'):
-            ok = sum(v['ok'] for v in s['valid'])
-            self.selo_valid.setText(f'{"✓" if ok == 3 else "⚠"}  Validação: {ok} de 3 itens da fila reconstruída dentro da faixa '
-                                    '5%–95% das réplicas (aba Modelo e validação).')
-            self.selo_valid.setProperty('papel', 'bom' if ok == 3 else 'ruim')
+            todos = s['valid'] + (s.get('valid_trace') or [])
+            ok = sum(v['ok'] for v in todos)
+            self.selo_valid.setText(f'{"✓" if ok == len(todos) else "⚠"}  Validação: {ok} de {len(todos)} itens dentro da faixa '
+                                    '5%–95% das réplicas (fila reconstruída, dispersão D e chegadas reais; aba Modelo e validação).')
+            self.selo_valid.setProperty('papel', 'bom' if ok == len(todos) else 'ruim')
         else:
             self.selo_valid.setText('Sem fila reconstruída: não há validação para este caso.')
             self.selo_valid.setProperty('papel', 'dica')
@@ -1370,8 +1650,8 @@ class Janela(QMainWindow):
                 w.setParent(None)
                 w.deleteLater()
         self.cartoes = {}
-        cols = 3 if len(res) == 5 else max(1, len(res))
-        for col in range(5):
+        cols = min(4, max(1, len(res)))
+        for col in range(8):
             self.grade_cartoes.setColumnStretch(col, 1 if col < cols else 0)
         for i, (nome, r) in enumerate(res.items()):
             ct = Cartao(nome, r, base, t)
@@ -1511,35 +1791,79 @@ class Janela(QMainWindow):
 
     def _tabelas(self, s):
         c, res, t = s['cfg'], s['res'], self.t
-        self._tabela('cen', ['cenário', 'L médio', 'pior momento', 'W (min)', 'tempo com fila ≥ 10'],
+        self._tabela('cen', ['cenário', 'L médio', 'pior momento', 'W (min)', 'tempo com fila ≥ 10', 'custo', 'eficiência'],
                      [[NOMES_LONGOS[r['chave']], f'{br(r["L"], 1)} ± {br(r["Lic"], 1)}', br(r['pior'], 1),
-                       f'{br(r["W"], 1)} ± {br(r["Wic"], 1)}', pct(r['longa'])] for r in res.values()])
+                       f'{br(r["W"], 1)} ± {br(r["Wic"], 1)}', pct(r['longa']),
+                       f'{br(r["custo"], 0)} catraca-min' if r.get('custo', 0) > 0.5 else '—',
+                       br(r['efic'], 0) if r.get('efic') is not None else '—'] for r in res.values()])
+        tb_b, _ib, card_b = self.tabs['busca']
+        b = s.get('busca')
+        if b:
+            card_b.show()
+            rr = b['ref']
+            linhas = [[f'{NOMES_LONGOS[CHAVES[b["ref_nome"]]]} (referência)', br(rr['custo'], 0), br(rr['W'], 1),
+                       br(rr['efic'], 0) if rr['efic'] is not None else '—']]
+            for x in b['linhas']:
+                marca = '  ← melhor' if b['melhor'] and x['N'] == b['melhor']['N'] else ''
+                linhas.append([f'abre com {x["N"]}, fecha com {x["M"]}{marca}', br(x['custo'], 0), br(x['W'], 1),
+                               br(x['efic'], 0) if x['efic'] is not None else '—'])
+            self._tabela('busca', ['política', 'catraca-min', 'W (min)', 'eficiência'], linhas)
+        else:
+            card_b.hide()
 
         tb_v, info_v, card_v = self.tabs['valid']
         if s.get('valid'):
             card_v.show()
             linhas, cores = [], {}
-            for i, v in enumerate(s['valid']):
+            itens = [(v, '') for v in s['valid']] + [(v, 'chegadas reais · ') for v in (s.get('valid_trace') or [])]
+            for i, (v, pre) in enumerate(itens):
                 fm = pct if v['casas'] == 2 else (lambda x, d=v['casas']: br(x, d))
-                linhas.append([v['rot'], fm(v['obs']), fm(v['sim']), f'{fm(v["lo"])} – {fm(v["hi"])}', '✓ sim' if v['ok'] else '✗ NÃO'])
+                linhas.append([pre + v['rot'], fm(v['obs']), fm(v['sim']), f'{fm(v["lo"])} – {fm(v["hi"])}', '✓ sim' if v['ok'] else '✗ NÃO'])
                 cores[(i, 4)] = t['ok'] if v['ok'] else t['alert']
             self._tabela('valid', ['', 'observada', 'simulada (média)', 'faixa 5%–95%', 'dentro?'], linhas, cores)
+            cv = s.get('curva')
+            extra = ''
+            if cv:
+                extra = (f' Curva: a fila observada fica dentro da faixa em {pct(cv["frac"])} dos minutos '
+                         f'(as próprias réplicas ficam em {pct(cv["linha"]["sim"])}; mínimo aceito {pct(cv["linha"]["lo"])}).')
+                if cv['fora']:
+                    extra += f' Trechos fora: {ac.texto_fora(cv["fora"], c["t0"])}.'
+            info_v.setText(self.dica_valid + extra)
         else:
             card_v.hide()
 
+        tb_s, _i, card_s = self.tabs['sens']
+        if s.get('sens'):
+            card_s.show()
+            seg = '2ª só no pico' if '2ª só no pico' in s['sens'][0]['res'] else '2 a hora toda'
+            self._tabela('sens', ['μ (/min)', 'origem', 'ρ no pico', 'W 1 catraca', f'W {NOMES_LONGOS[CHAVES[seg]]}'],
+                         [[br(x['mu']), x['origem'], br(x['rho_pico']), f'{br(x["res"]["1 catraca"]["W"], 1)} min',
+                           f'{br(x["res"][seg]["W"], 1)} min'] for x in s['sens']])
+        else:
+            card_s.hide()
+
         mu, linhas = c['mu'], []
+        g = c.get('grupo')
         trechos = [('calma', c['lam_cal']), ('pico', c['lam_pic']), ('sessão', c['lam_med'])]
         for rot, lam in trechos:
             if lam is None:
                 continue
             f = ac.formulas(lam, mu)
             if f['estavel']:
-                linhas.append([rot, br(lam), br(f['rho']), pct(f['vazia']), br(f['L']), br(f['W']), br(f['Wq'])])
+                lin = [rot, br(lam), br(f['rho']), pct(f['vazia']), br(f['L']), br(f['W']), br(f['Wq'])]
+                if g:
+                    fg = ac.formulas_grupo(lam, mu, g['D'])
+                    lin += [br(fg['L']), br(fg['W'])]
+                linhas.append(lin)
             else:
-                linhas.append([rot, br(lam), br(f['rho']), 'ρ ≥ 1: as fórmulas não valem, a fila cresce. Use a simulação.'])
-        self._tabela('mm1', ['trecho', 'λ (/min)', 'ρ', 'vazia', 'L', 'W (min)', 'Wq (min)'], linhas)
+                linhas.append([rot, br(lam), br(f['rho']), 'ρ ≥ 1 (ou perto): as fórmulas não valem, a fila cresce. Use a simulação.'])
+        cab = ['trecho', 'λ (/min)', 'ρ', 'vazia', 'L', 'W (min)', 'Wq (min)'] + (['L em grupo', 'W em grupo'] if g else [])
+        self._tabela('mm1', cab, linhas)
         md = self.med if c['d'] else None
         partes = [f'μ = {br(mu)} /min (atendimento médio {br(60 / mu, 1)} s) · θ = {br(c["theta"], 3)} /min por aluno que espera.']
+        if g:
+            partes.append(f'Chegadas em grupo: E[k] = {br(g["Ek"])}, D = E[k²]/E[k] = {br(g["D"])}; '
+                          f'"em grupo" é o M^X/M/1, L e W multiplicados por (1 + D)/2 = {br((1 + g["D"]) / 2)}.')
         if md:
             partes.append(f'{md["total"]} chegadas em {md["T"]} min (λ médio {br(md["lam_med"])} /min). '
                           f'Calma: {len(md["cal_m"])} min · pico: {len(md["pic_m"])} min.')
@@ -1547,18 +1871,23 @@ class Janela(QMainWindow):
             if len(cal) > 2:
                 mc = sum(cal) / len(cal)
                 vm = statistics.pvariance(cal) / mc if mc else float('nan')
-                partes.append(f'Teste rápido de Poisson na calma: variância/média = {br(vm)} (perto de 1 é Poisson).')
+                partes.append(f'Dispersão na calma: variância/média = {br(vm)} (perto de 1 é Poisson).')
+            if md['janelas']:
+                partes.append(f'Pico {ac.texto_janelas(md["janelas"], c["t0"])}.')
             if md['D']:
                 partes.append(f'Desistências: {md["D"]} ({br(md["D"] / md["total"] * 100, 0)}% das chegadas).')
         self.tabs['mm1'][1].setText(' '.join(partes))
 
         if s.get('verif'):
-            f, mt = s['verif']
+            vs = s['verif']
             self.tabs['verif'][2].show()
-            self._tabela('verif', ['métrica', 'fórmula', 'simulado'],
-                         [['utilização ρ', pct(f['rho']), pct(mt['ocupada'])],
-                          ['alunos no sistema L', br(f['L']), br(mt['L'])],
-                          ['tempo W (min)', br(f['W']), br(mt['W'])]])
+            cab = ['métrica'] + [x for nome, _f, _m in vs for x in (f'{nome}: fórmula', 'simulado')]
+            self._tabela('verif', cab,
+                         [['utilização ρ'] + [x for _n, f, mt in vs for x in (pct(f['rho']), pct(mt['ocupada']))],
+                          ['catraca vazia 1 − ρ'] + [x for _n, f, mt in vs for x in (pct(f['vazia']), pct(1 - mt['ocupada']))],
+                          ['alunos no sistema L'] + [x for _n, f, mt in vs for x in (br(f['L']), br(mt['L']))],
+                          ['tempo W (min)'] + [x for _n, f, mt in vs for x in (br(f['W']), br(mt['W']))],
+                          ['espera na fila Wq (min)'] + [x for _n, f, mt in vs for x in (br(f['Wq']), br(mt['Lq'] / c['lam_cal']))]])
         else:
             self.tabs['verif'][2].hide()
 
@@ -1587,8 +1916,9 @@ class Janela(QMainWindow):
         c, r = s['cfg'], s['res'][self.anim_nome]
         tocando = self.palco.rodando
         hist = r['hs'][self.anim_rep]
-        ev = rastrear(hist, s['lams'], c['mu'], r['cs'], c['n0'], c['K'], c['seed'] + self.anim_rep, s['passo'], r['theta'])
-        self.palco.carregar(hist, ev, r['cs'], c['n0'], s['passo'], c['K'])
+        ev, abertas = rastrear(hist, r['lams'], r['mu'], r['cs'], c['n0'], c['K'], c['seed'] + self.anim_rep, s['passo'],
+                               r['theta'], c.get('grupo'), r.get('politica'))
+        self.palco.carregar(hist, ev, r['cs'], c['n0'], s['passo'], c['K'], abertas if r.get('politica') else None)
         self.linha.carregar(list(hist), r['media'], c['pico'], s['passo'])
         self.anim_nome_lb.setText(f'{NOMES_LONGOS[r["chave"]].upper()} · RÉPLICA {self.anim_rep + 1} DE {c["reps"]} · SEMENTE {c["seed"] + self.anim_rep}')
         self.leg_anim.setText(
