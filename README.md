@@ -10,6 +10,7 @@ Seminário de Avaliação de Desempenho (UFOPA). O projeto mede a fila da catrac
 | `style.css` | Estilos da página | Carregado por `index.html` |
 | `app.js` | Lógica da coleta, cronômetro e exportação CSV | Carregado por `index.html` |
 | `analise_catraca.py` | Calcula λ e μ, aplica as fórmulas, simula, valida e compara cenários | Terminal (Python 3) |
+| `simulador_gui.py` | Interface visual do simulador: parâmetros, cenários, gráficos e a fila animada | Janela no computador (Python 3 + PySide6) |
 
 A página usa `style.css` e `app.js`; mantenha os três arquivos na mesma pasta. O script de análise lê os CSVs exportados pela página.
 
@@ -101,6 +102,25 @@ python3 analise_catraca.py *.csv --fila ticket 1.8 3.0 --fila suco 1.2 2.0
 7. **Entre sessões:** λ de calma e de pico com IC de 95%.
 
 Se algum item da validação sair "NÃO", revejam primeiro as medições: contagens, separação calma/pico e os atendimentos cronometrados.
+
+## 3. Simulador com interface visual
+
+O `simulador_gui.py` abre uma janela com o mesmo simulador do `analise_catraca.py`. Ele chama as funções do script, então, com os mesmos parâmetros e a mesma semente, dá os mesmos números do `relatorio.txt`.
+
+```bash
+python -m pip install PySide6 matplotlib
+python simulador_gui.py                      # abre com as sessões de 17/11 que estão em artefatos/
+python simulador_gui.py A_dia1.csv B_dia1.csv C_dia1.csv
+```
+
+- **Dados:** escolha uma sessão de exemplo, abra os CSVs da coleta (botão "Abrir CSVs da coleta…") ou use o modelo manual, sem dados, informando duração, trecho de pico e taxas.
+- **Parâmetros:** λ de calma e de pico, μ, θ, fila inicial e limiar de pico já vêm medidos da sessão. Dá para mudar qualquer um para testar "e se…"; o campo alterado fica destacado e "Voltar aos valores medidos" desfaz.
+- **Cenários:** os quatro do relatório e um personalizado, com quantas catracas abrir na calma e no pico.
+- **Visão geral:** conclusão, um cartão por cenário (W, L, pior momento, tempo com fila ≥ 10) e a fila andando: uma réplica animada, com catracas abrindo no pico, desistências e linha do tempo para ir a qualquer momento.
+- **Gráficos:** chegadas por minuto contra a capacidade de 1 e 2 catracas, validação (fila reconstruída × simulada) e cenários ao longo do tempo. Passe o mouse para ver os valores.
+- **Modelo e validação:** as tabelas do relatório (cenários com IC, validação, M/M/1 por trecho e verificação).
+
+Com 500 réplicas a simulação leva alguns segundos; a barra de progresso mostra o andamento.
 
 ## Como o modelo funciona
 

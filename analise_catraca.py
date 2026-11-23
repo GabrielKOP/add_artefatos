@@ -263,6 +263,96 @@ def percentil(v, p):
     return v[min(len(v) - 1, max(0, int(round(p * (len(v) - 1)))))]
 
 
+# ---------------------------------------------------------------- cálculos (usados pelo relatório e pelo simulador_gui.py)
+def medir(d, limiar=None):
+    """λ de calma e de pico, desistências (θ) e fila inicial de uma sessão, sem imprimir nada."""
+    T, arr = d['T'], d['arr']
+    total = sum(arr)
+    lam_med = total / T
+    if limiar is None:
+        limiar = limiar_auto(suavizar(arr))
+    pico = classificar(arr, limiar)
+    cal_m = [a for a, p in zip(arr, pico) if not p]
+    pic_m = [a for a, p in zip(arr, pico) if p]
+    D = sum(d['des'])
+    c0 = d['catracas']
+    esperando = sum(max(n - c0, 0) for _, n in d['fila'])
+    if d['fila']:
+        esperando *= T / len(d['fila'])  # cada anotação vale ~1 min de aluno esperando
+    return {
+        'T': T, 'total': total, 'lam_med': lam_med, 'limiar': limiar, 'pico': pico,
+        'cal_m': cal_m, 'pic_m': pic_m,
+        'lam_cal': sum(cal_m) / len(cal_m) if cal_m else None,
+        'lam_pic': sum(pic_m) / len(pic_m) if pic_m else None,
+        'D': D, 'theta': D / esperando if (D and esperando) else 0.0,
+        'n0': d['fila'][0][1] if d['fila'] else 0,
+    }
+
+
+def lams_por_minuto(pico, lam_cal, lam_pic, lam_med):
+    """λ de cada minuto: o de pico nos minutos de pico, o de calma nos demais."""
+    return [lam_pic if p and lam_pic is not None else (lam_cal if lam_cal is not None else lam_med) for p in pico]
+
+
+def cenarios_padrao(pico, theta):
+    """(nome, catracas por minuto, θ) dos cenários comparados no relatório."""
+    T = len(pico)
+    cen = [('1 catraca', [1] * T, theta)]
+    if theta > 0:
+        cen.append(('1 cat. sem desist.', [1] * T, 0.0))
+    if any(pico):
+        cen.append(('2ª só no pico', [2 if p else 1 for p in pico], theta))
+    cen.append(('2 a hora toda', [2] * T, theta))
+    return cen
+
+
+def verificar(lam, mu, K, seed, passo, horas=200):
+    """Simulador com λ constante e 1 catraca por `horas` h, para comparar com as fórmulas."""
+    h = simular([lam] * (horas * 60), mu, [1] * (horas * 60), 0, K, seed, passo)
+    return formulas(lam, mu), metricas(h, lam)
+
+
+def simular_cenarios(cen, lams, mu, n0, K, seed, passo, reps, lam_med, progresso=None):
+    """Roda `reps` réplicas de cada cenário com as mesmas sementes. progresso(feitas, total) é opcional."""
+    res = {}
+    total, feitas = len(cen) * reps, 0
+    for nome, cs, th in cen:
+        hs = []
+        for i in range(reps):
+            hs.append(simular(lams, mu, cs, n0, K, seed + i, passo, th))
+            feitas += 1
+            if progresso:
+                progresso(feitas, total)
+        ms = [metricas(h, lam_med) for h in hs]
+        Lm, Lic = media_ic([m['L'] for m in ms])
+        Wm, Wic = media_ic([m['W'] for m in ms])
+        res[nome] = {
+            'hs': hs, 'ms': ms, 'cs': cs, 'theta': th, 'L': Lm, 'Lic': Lic, 'W': Wm, 'Wic': Wic,
+            'pior': sum(m['pior'] for m in ms) / len(ms),
+            'longa': sum(m['longa'] for m in ms) / len(ms),
+        }
+    return res
+
+
+def validar(fila, hs, passo):
+    """Fila reconstruída x réplicas simuladas nos mesmos instantes (L, pior momento, fração com fila ≥ 10)."""
+    anot = [n for _, n in fila]
+    idx = [min(int(sec / passo), len(hs[0]) - 1) for sec, _ in fila]
+    Ls = [sum(h[i] for i in idx) / len(idx) for h in hs]
+    ps = [max(h[i] for i in idx) for h in hs]
+    gs = [sum(1 for i in idx if h[i] >= 10) / len(idx) for h in hs]
+    linhas = []
+    for rot, a, sim, casas in (
+        ('L (alunos em média)', sum(anot) / len(anot), Ls, 1),
+        ('pior momento', max(anot), ps, 0),
+        ('fração com fila ≥ 10', sum(1 for x in anot if x >= 10) / len(anot), gs, 2),
+    ):
+        lo, hi = percentil(sim, .05), percentil(sim, .95)
+        linhas.append({'rot': rot, 'obs': a, 'sim': sum(sim) / len(sim), 'lo': lo, 'hi': hi,
+                       'ok': lo <= a <= hi, 'casas': casas})
+    return linhas
+
+
 # ---------------------------------------------------------------- análise
 def analisar(d, mu, args, pasta):
     T, arr = d['T'], d['arr']
@@ -270,13 +360,10 @@ def analisar(d, mu, args, pasta):
     if total == 0:
         P(f'Sessão {d["nome"]}: nenhuma chegada registrada. Pulando.')
         return None
-    lam_med = total / T
-    limiar = args.limiar if args.limiar is not None else limiar_auto(suavizar(arr))
-    pico = classificar(arr, limiar)
-    cal_m = [a for a, p in zip(arr, pico) if not p]
-    pic_m = [a for a, p in zip(arr, pico) if p]
-    lam_cal = sum(cal_m) / len(cal_m) if cal_m else None
-    lam_pic = sum(pic_m) / len(pic_m) if pic_m else None
+    md = medir(d, args.limiar)
+    lam_med, limiar, pico = md['lam_med'], md['limiar'], md['pico']
+    cal_m, pic_m = md['cal_m'], md['pic_m']
+    lam_cal, lam_pic = md['lam_cal'], md['lam_pic']
 
     P('=' * 72)
     P(f'SESSÃO {d["nome"]}  ({T} min observados, {d["catracas"]} catraca(s) aberta(s))')
@@ -290,12 +377,7 @@ def analisar(d, mu, args, pasta):
         P(f'  teste rápido de Poisson na calma: variância/média das chegadas por minuto = {br(vc / mc if mc else float("nan"))} (perto de 1 é Poisson)')
 
     # fórmulas por trecho
-    D = sum(d['des'])
-    c0 = d['catracas']
-    esperando = sum(max(n - c0, 0) for _, n in d['fila'])
-    if d['fila']:
-        esperando *= T / len(d['fila'])  # cada anotação vale ~1 min de aluno esperando
-    theta = D / esperando if (D and esperando) else 0.0
+    D, theta = md['D'], md['theta']
     P('')
     if D:
         lam_ef = lam_med - D / T
@@ -318,10 +400,8 @@ def analisar(d, mu, args, pasta):
     # verificação num trecho sem pico
     P('')
     if lam_cal is not None and formulas(lam_cal, mu)['estavel'] and lam_cal > 0:
-        f = formulas(lam_cal, mu)
         horas = 200
-        h = simular([lam_cal] * (horas * 60), mu, [1] * (horas * 60), 0, args.K, args.seed, args.passo)
-        mt = metricas(h, lam_cal)
+        f, mt = verificar(lam_cal, mu, args.K, args.seed, args.passo, horas)
         P(f'VERIFICAÇÃO (slide 19): simulador com λ de calma por {horas} h simuladas contra as fórmulas')
         P(f'  {"métrica":<22}{"fórmula":>10}{"simulado":>10}')
         P(f'  {"utilização ρ":<22}{br(f["rho"] * 100, 0) + "%":>10}{br(mt["ocupada"] * 100, 0) + "%":>10}')
@@ -332,14 +412,9 @@ def analisar(d, mu, args, pasta):
         P('VERIFICAÇÃO: sem trecho de calma estável nesta sessão. Rode com outra sessão ou ajuste --limiar.')
 
     # cenários
-    lams = [lam_pic if p and lam_pic is not None else (lam_cal if lam_cal is not None else lam_med) for p in pico]
-    cen = [('1 catraca', [1] * T, theta)]
-    if theta > 0:
-        cen.append(('1 cat. sem desist.', [1] * T, 0.0))
-    if any(pico):
-        cen.append(('2ª só no pico', [2 if p else 1 for p in pico], theta))
-    cen.append(('2 a hora toda', [2] * T, theta))
-    n0 = d['fila'][0][1] if d['fila'] else 0
+    lams = lams_por_minuto(pico, lam_cal, lam_pic, lam_med)
+    cen = cenarios_padrao(pico, theta)
+    n0 = md['n0']
     novo = passo_seguro(lams, mu, 2, theta, args.K, args.passo)
     if novo != args.passo:
         P(f'(passo reduzido de {br(args.passo, 1)} s para {br(novo, 1)} s: com μ = {br(mu)} /min o passo maior daria chances somando mais de 1)')
@@ -347,39 +422,24 @@ def analisar(d, mu, args, pasta):
     P('')
     P(f'SIMULAÇÃO: {args.reps} réplicas de {T} min, passo {br(args.passo, 1)} s, K = {args.K}, fila inicial = {n0}, θ = {br(theta, 3)} /min, mesma semente em todos os cenários')
     P(f'  {"cenário":<20}{"L médio":>14}{"pior momento":>14}{"W (min)":>12}{"fila ≥ 10":>12}')
-    res = {}
-    for nome, cs, th in cen:
-        hs = [simular(lams, mu, cs, n0, args.K, args.seed + i, args.passo, th) for i in range(args.reps)]
-        ms = [metricas(h, lam_med) for h in hs]
-        Lm, Lic = media_ic([m['L'] for m in ms])
-        Wm, Wic = media_ic([m['W'] for m in ms])
-        pior = sum(m['pior'] for m in ms) / len(ms)
-        lg = sum(m['longa'] for m in ms) / len(ms)
-        res[nome] = {'hs': hs, 'ms': ms, 'L': Lm, 'W': Wm, 'pior': pior, 'longa': lg}
-        P(f'  {nome:<20}{br(Lm, 1) + " ±" + br(Lic, 1):>14}{br(pior, 1):>14}{br(Wm, 1) + " ±" + br(Wic, 1):>12}{br(lg * 100, 0) + "%":>12}')
+    res = simular_cenarios(cen, lams, mu, n0, args.K, args.seed, args.passo, args.reps, lam_med)
+    for nome, r in res.items():
+        P(f'  {nome:<20}{br(r["L"], 1) + " ±" + br(r["Lic"], 1):>14}{br(r["pior"], 1):>14}{br(r["W"], 1) + " ±" + br(r["Wic"], 1):>12}{br(r["longa"] * 100, 0) + "%":>12}')
     P('  (± é o IC de 95% entre réplicas. Uma hora simulada é uma amostra, não uma medida.)')
 
     # validação
     P('')
     base = res['1 catraca']
     if d['fila']:
-        anot = [n for _, n in d['fila']]
-        La = sum(anot) / len(anot)
-        pa = max(anot)
-        ga = sum(1 for x in anot if x >= 10) / len(anot)
-        idx = [min(int(sec / args.passo), len(base['hs'][0]) - 1) for sec, _ in d['fila']]
-        Ls = [sum(h[i] for i in idx) / len(idx) for h in base['hs']]
-        ps = [max(h[i] for i in idx) for h in base['hs']]
-        gs = [sum(1 for i in idx if h[i] >= 10) / len(idx) for h in base['hs']]
-        P(f'VALIDAÇÃO (slide 22): fila reconstruída ({len(anot)} amostras) x simulada nos mesmos instantes')
+        P(f'VALIDAÇÃO (slide 22): fila reconstruída ({len(d["fila"])} amostras) x simulada nos mesmos instantes')
         P(f'  {"":<22}{"observada":>10}{"simulada (média)":>18}{"faixa 5%-95%":>16}{"dentro?":>9}')
-        for rot, a, sim, d1 in (('L (alunos em média)', La, Ls, 1), ('pior momento', pa, ps, 0), ('fração com fila ≥ 10', ga, gs, 2)):
-            lo, hi = percentil(sim, .05), percentil(sim, .95)
-            ok = 'sim' if lo <= a <= hi else 'NÃO'
+        for v in validar(d['fila'], base['hs'], args.passo):
+            rot, a, sm, lo, hi, d1 = v['rot'], v['obs'], v['sim'], v['lo'], v['hi'], v['casas']
+            ok = 'sim' if v['ok'] else 'NÃO'
             if d1 == 2:
-                P(f'  {rot:<22}{br(a * 100, 0) + "%":>10}{br(sum(sim) / len(sim) * 100, 0) + "%":>18}{br(lo * 100, 0) + "%-" + br(hi * 100, 0) + "%":>16}{ok:>9}')
+                P(f'  {rot:<22}{br(a * 100, 0) + "%":>10}{br(sm * 100, 0) + "%":>18}{br(lo * 100, 0) + "%-" + br(hi * 100, 0) + "%":>16}{ok:>9}')
             else:
-                P(f'  {rot:<22}{br(a, d1):>10}{br(sum(sim) / len(sim), d1):>18}{br(lo, d1) + "-" + br(hi, d1):>16}{ok:>9}')
+                P(f'  {rot:<22}{br(a, d1):>10}{br(sm, d1):>18}{br(lo, d1) + "-" + br(hi, d1):>16}{ok:>9}')
         P('  Se algum ficar fora da faixa, revejam primeiro as medições: contagens, separação calma/pico e os atendimentos cronometrados.')
     else:
         P('VALIDAÇÃO: sem dados suficientes para reconstruir a fila nesta sessão.')
