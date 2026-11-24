@@ -6,24 +6,24 @@ Seminário de Avaliação de Desempenho (UFOPA). O projeto mede a fila da catrac
 
 | Arquivo | Para quê | Onde roda |
 |---|---|---|
-| `index.html` | Estrutura da página de coleta | Navegador do celular |
-| `style.css` | Estilos da página | Carregado por `index.html` |
-| `app.js` | Lógica da coleta, cronômetro e exportação CSV | Carregado por `index.html` |
+| `docs/index.html` | Estrutura da página de coleta | Navegador do celular |
+| `docs/style.css` | Estilos da página | Carregado por `index.html` |
+| `docs/app.js` | Lógica da coleta, cronômetro e exportação CSV | Carregado por `index.html` |
 | `analise_catraca.py` | Calcula λ e μ, aplica as fórmulas, simula, valida e compara cenários | Terminal (Python 3) |
 | `simulador_gui.py` | Interface visual do simulador: parâmetros, cenários, gráficos e a fila animada | Janela no computador (Python 3 + PySide6) |
 
-A página usa `style.css` e `app.js`; mantenha os três arquivos na mesma pasta. O script de análise lê os CSVs exportados pela página.
+A página usa `style.css` e `app.js`; mantenha os três arquivos juntos na pasta `docs/`. O script de análise lê os CSVs exportados pela página.
 
 ## 1. Coleta (três observadores por rodada)
 
-Abram a página nos três celulares. Se for usar o arquivo local, sirva a pasta na rede:
+Abram a página nos três celulares. Se for usar o arquivo local, sirva a pasta `docs/` na rede:
 
 ```bash
-python3 -m http.server 8000
+python3 -m http.server 8000 --directory docs
 # nos celulares: http://IP-DO-COMPUTADOR:8000   (mesma rede wi-fi)
 ```
 
-Outra opção é hospedar o `index.html` (GitHub Pages, por exemplo).
+Outra opção é hospedar a pasta `docs/` (GitHub Pages, por exemplo).
 
 **Antes de começar**, nos três celulares:
 - Abram "Sessão e observador" e ponham o **mesmo nome de sessão** (padrão: `data-refeicao`). É por ele que o script junta os arquivos de A, B e C.
