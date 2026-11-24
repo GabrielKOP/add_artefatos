@@ -11,8 +11,11 @@ Seminário de Avaliação de Desempenho (UFOPA). O projeto mede a fila da catrac
 | `docs/app.js` | Lógica da coleta, cronômetro e exportação CSV | Carregado por `index.html` |
 | `analise_catraca.py` | Calcula λ e μ, aplica as fórmulas, simula, valida e compara cenários | Terminal (Python 3) |
 | `simulador_gui.py` | Interface visual do simulador: parâmetros, cenários, gráficos e a fila animada | Janela no computador (Python 3 + PySide6) |
+| `slide.pdf` | Slides da apresentação do seminário (24/11/2026): sistema, medição, modelo M/M/1, simulação, cenários "e se?", resposta à pergunta da equipe e conclusões | Qualquer leitor de PDF |
 
 A página usa `style.css` e `app.js`; mantenha os três arquivos juntos na pasta `docs/`. O script de análise lê os CSVs exportados pela página.
+
+A apresentação do seminário está em [`slide.pdf`](slide.pdf). Os números dos slides vêm da análise principal (`artefatos/analise_revisada/`, seção 2).
 
 ## 1. Coleta (três observadores por rodada)
 
